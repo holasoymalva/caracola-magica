@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f0f9ff;
+      font-family: Arial, sans-serif;
+    }
+
+    .conch-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .conch-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .string-container {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 40px;
+      width: 4px;
+      overflow: visible;
+    }
+
+    .string {
+      position: absolute;
+      width: 100%;
+      background: #e5e7eb;
+      border-radius: 4px;
+      cursor: grab;
+      transform-origin: top;
+      height: 100%;
+      transition: height 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .string.pulling {
+      cursor: grabbing;
+    }
+
+    .string::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 12px;
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 50%;
+    }
+
+    @keyframes retract {
+      0% { height: var(--pull-height); }
+      20% { height: calc(var(--pull-height) * 0.8); }
+      40% { height: calc(var(--pull-height) * 1.1); }
+      60% { height: calc(var(--pull-height) * 0.9); }
+      80% { height: calc(var(--pull-height) * 1.05); }
+      100% { height: 40px; }
+    }
+
+    .string.retracting {
+      animation: retract 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+    }
+
+    .answer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .answer.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="conch-container">
+    <img src="./src/memes.png" alt="Caracola Mágica" class="conch-image">
+    <div class="string-container">
+      <div class="string"></div>
+    </div>
+    <div class="answer"></div>
+  </div>
+
+  <script>
+    const stringContainer = document.querySelector('.string-container');
+    const string = document.querySelector('.string');
+    const answer = document.querySelector('.answer');
+    let isAnimating = false;
+    let startY = 0;
+    let currentHeight = 40;
+    let originalHeight = 40;
+    let isDragging = false;
+
+    function getRandomAnswer() {
+      return Math.random() < 0.5 ? 'Sí' : 'No';
+    }
+
+    function showAnswer() {
+      if (isAnimating) return;
+      
+      isAnimating = true;
+      answer.textContent = getRandomAnswer();
+      answer.classList.add('visible');
+      
+      setTimeout(() => {
+        answer.classList.remove('visible');
+        isAnimating = false;
+      }, 3000);
+    }
+
+    function retractString() {
+      string.style.removeProperty('height');
+      string.style.setProperty('--pull-height', `${currentHeight}px`);
+      string.classList.add('retracting');
+      
+      setTimeout(() => {
+        string.classList.remove('retracting');
+        currentHeight = originalHeight;
+      }, 600);
+    }
+
+    string.addEventListener('mousedown', (e) => {
+      if (isAnimating) return;
+      
+      isDragging = true;
+      string.classList.add('pulling');
+      startY = e.clientY;
+      string.style.transition = 'none';
+      
+      // Prevenir selección de texto mientras se arrastra
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      
+      const deltaY = Math.max(0, e.clientY - startY);
+      currentHeight = originalHeight + deltaY;
+      string.style.height = `${currentHeight}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      string.classList.remove('pulling');
+      
+      if (currentHeight > originalHeight + 50) {
+        showAnswer();
+      }
+      
+      retractString();
+    });
+
+    // Soporte para dispositivos táctiles
+    string.addEventListener('touchstart', (e) => {
+      if (isAnimating) return;
+      
+      isDragging = true;
+      string.classList.add('pulling');
+      startY = e.touches[0].clientY;
+      string.style.transition = 'none';
+      
+      e.preventDefault();
+    });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      
+      const deltaY = Math.max(0, e.touches[0].clientY - startY);
+      currentHeight = originalHeight + deltaY;
+      string.style.height = `${currentHeight}px`;
+      
+      e.preventDefault();
+    });
+
+    document.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      string.classList.remove('pulling');
+      
+      if (currentHeight > originalHeight + 50) {
+        showAnswer();
+      }
+      
+      retractString();
+    });
+  </script>
+</body>
+</html>
